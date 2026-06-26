@@ -1,224 +1,25 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#0b0f17" />
-  <title>Project Atlas | Hussain Transformation</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <style>
-    :root{--bg:#080b12;--card:#121a2a;--card2:#0f172a;--line:#263246;--txt:#e5e7eb;--mut:#94a3b8;--g:#22c55e;--y:#f59e0b;--r:#ef4444;--b:#60a5fa}
-    *{box-sizing:border-box}
-    body{margin:0;background:radial-gradient(circle at top,#172033 0,#080b12 42%,#05070b 100%);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Arial,sans-serif}
-    header{position:sticky;top:0;z-index:5;padding:18px 16px;background:rgba(8,11,18,.88);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
-    h1{font-size:25px;margin:0} h2{font-size:20px;margin:0 0 10px} h3{margin:8px 0} p,small{color:var(--mut)} a{color:#93c5fd}
-    .wrap{max-width:1120px;margin:0 auto;padding:14px 14px 90px}
-    nav{display:flex;gap:8px;overflow:auto;padding:10px 14px;position:sticky;top:72px;z-index:4;background:rgba(8,11,18,.88);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
-    button{border:0;border-radius:14px;padding:11px 13px;font-weight:800;background:#182237;color:var(--txt);cursor:pointer}
-    button.on,.save{background:var(--g);color:#03140a}.danger{background:#7f1d1d}.ghost{background:#0f172a;border:1px solid var(--line)}
-    .panel{display:none}.panel.on{display:block}
-    .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
-    .card,.box{background:rgba(18,26,42,.88);border:1px solid var(--line);border-radius:22px;padding:15px;margin-bottom:12px;box-shadow:0 12px 40px rgba(0,0,0,.20)}
-    .card span{display:block;color:var(--mut);font-size:12px}.card b{font-size:30px}.card small{font-size:13px}
-    .grid{display:grid;grid-template-columns:1.1fr .9fr;gap:12px}.form{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.wide{grid-column:1/-1}
-    label{color:var(--mut);font-size:13px} input,select,textarea{width:100%;margin-top:5px;border:1px solid var(--line);border-radius:13px;background:#0b1220;color:var(--txt);padding:12px;font-size:16px}
-    textarea{min-height:78px} table{width:100%;border-collapse:collapse;font-size:13px} th,td{border-bottom:1px solid var(--line);padding:9px;text-align:left;white-space:nowrap} .scroll{overflow:auto}
-    .bar{height:12px;background:#0b1220;border:1px solid var(--line);border-radius:999px;overflow:hidden}.fill{height:100%;background:linear-gradient(90deg,var(--g),#86efac)}
-    .meal,.day{background:#0b1220;border:1px solid var(--line);border-radius:16px;padding:12px;margin:8px 0}
-    .pill{display:inline-block;padding:6px 10px;border-radius:999px;background:#0b1220;border:1px solid var(--line);margin:3px;color:var(--mut);font-size:12px}
-    .status{padding:10px;border-radius:14px;background:#0b1220;border:1px solid var(--line);margin-bottom:12px}
-    canvas{width:100%;height:300px;background:#0b1220;border:1px solid var(--line);border-radius:16px}
-    .green{color:#86efac}.yellow{color:#fcd34d}.red{color:#fca5a5}
-    @media(max-width:760px){.cards,.grid,.form{grid-template-columns:1fr}nav{top:82px}.card b{font-size:26px}header{padding-top:14px}}
-  </style>
-</head>
-<body>
-<header>
-  <h1>Project Atlas</h1>
-  <p>Hussain Transformation • Month 1 • Jun 25-Jul 24 • 262 → 255 lb</p>
-</header>
-
-<nav>
-  <button class="tab on" data-t="dash">Dashboard</button>
-  <button class="tab" data-t="daily">Daily</button>
-  <button class="tab" data-t="food">Food</button>
-  <button class="tab" data-t="workout">Workout</button>
-  <button class="tab" data-t="progress">Progress</button>
-  <button class="tab" data-t="settings">Settings</button>
-</nav>
-
-<div class="wrap">
-  <div id="cloudStatus" class="status">Storage: checking...</div>
-
-  <section id="dash" class="panel on">
-    <div class="cards">
-      <div class="card"><span>Current weight</span><b id="cw">—</b><small> lb</small></div>
-      <div class="card"><span>Weight lost</span><b id="wl">—</b><small> lb</small></div>
-      <div class="card"><span>Compliance</span><b id="cp">—</b><small>%</small></div>
-      <div class="card"><span>Gutka-free</span><b id="gs">0</b><small> days</small></div>
-    </div>
-    <div class="grid">
-      <div class="box"><h2>Weight trend</h2><canvas id="chart" width="900" height="320"></canvas></div>
-      <div class="box">
-        <h2>Today</h2><div id="today"></div>
-        <h2>Coach's Corner</h2><p id="coach"></p>
-        <button id="copySummary" class="ghost">Copy weekly summary for ChatGPT</button>
-      </div>
-    </div>
-  </section>
-
-  <section id="daily" class="panel">
-    <div class="box">
-      <h2>Daily check-in</h2>
-      <form id="df" class="form">
-        <label>Date<input type="date" id="date"></label>
-        <label>Morning weight<input type="number" step="0.1" id="weight"></label>
-        <label>Waist<input type="number" step="0.1" id="waist"></label>
-        <label>Calories<input type="number" id="cal"></label>
-        <label>Protein<input type="number" id="pro"></label>
-        <label>Carbs<input type="number" id="carb"></label>
-        <label>Fat<input type="number" id="fat"></label>
-        <label>Water gallons<input type="number" step="0.1" id="water"></label>
-        <label>Steps<input type="number" id="steps"></label>
-        <label>Sleep hours<input type="number" step="0.1" id="sleep"></label>
-        <label>Workout<select id="wo"><option>No</option><option>Yes</option></select></label>
-        <label>Cardio<select id="cardio"><option>No</option><option>Yes</option></select></label>
-        <label>Gutka used?<select id="gutka"><option>No</option><option>Yes</option></select></label>
-        <label>Mounjaro?<select id="mj"><option>No</option><option>Yes</option></select></label>
-        <label class="wide">Notes<textarea id="notes"></textarea></label>
-        <button class="save wide">Save check-in</button>
-      </form>
-    </div>
-    <div class="box scroll"><h2>History</h2><table id="dt"></table></div>
-  </section>
-
-  <section id="food" class="panel">
-    <div class="grid">
-      <div class="box">
-        <h2>Food logger</h2>
-        <form id="ff" class="form">
-          <label>Date<input type="date" id="fdate"></label>
-          <label>Food<input list="foods" id="fname" placeholder="8 oz chicken breast"></label>
-          <datalist id="foods"></datalist>
-          <label>Amount<input type="number" step="0.1" id="amt" value="1"></label>
-          <label>Unit<select id="unit"><option>serving</option><option>oz</option><option>cup</option><option>scoop</option><option>piece</option></select></label>
-          <button class="save wide">Add food</button>
-        </form>
-        <p>Pick a saved food, enter amount, and it updates your daily nutrition automatically.</p>
-      </div>
-      <div class="box"><h2>Macros today</h2><div id="macros"></div></div>
-    </div>
-    <div class="box scroll"><h2>Food history</h2><table id="ft"></table></div>
-    <div class="box"><h2>Meal prep library</h2><div id="meals"></div></div>
-  </section>
-
-  <section id="workout" class="panel"><div class="box"><h2>Training plan</h2><div id="wps"></div></div></section>
-
-  <section id="progress" class="panel">
-    <div class="box"><h2>Saturday progress photo checklist</h2><p>Front relaxed, front flexed, side, back, and most muscular every Saturday morning.</p><div id="photos"></div></div>
-    <div class="box"><h2>Physique scorecard</h2><div class="form" id="score"></div></div>
-  </section>
-
-  <section id="settings" class="panel">
-    <div class="box">
-      <h2>Cloud setup</h2>
-      <p>Add your Supabase URL and anon key once. Then this site stores data online and can be opened from your phone, laptop, or by a review link.</p>
-      <form id="cloudForm" class="form">
-        <label>Supabase URL<input id="surl" placeholder="https://xxxxx.supabase.co"></label>
-        <label>Anon public key<input id="skey" placeholder="eyJ..."></label>
-        <button class="save wide">Save cloud config</button>
-      </form>
-    </div>
-    <div class="box">
-      <h2>Targets</h2>
-      <form id="sf" class="form">
-        <label>Calories<input id="tc" type="number"></label>
-        <label>Protein<input id="tp" type="number"></label>
-        <label>Carbs<input id="tcarb" type="number"></label>
-        <label>Fat<input id="tf" type="number"></label>
-        <label>Steps<input id="ts" type="number"></label>
-        <button class="save wide">Save targets</button>
-      </form>
-    </div>
-    <div class="box">
-      <h2>Add custom food</h2>
-      <form id="cf" class="form">
-        <label>Name<input id="cn"></label><label>Calories<input id="cc" type="number"></label>
-        <label>Protein<input id="cpp" type="number"></label><label>Carbs<input id="ccc" type="number"></label>
-        <label>Fat<input id="cff" type="number"></label><button class="save wide">Add custom food</button>
-      </form>
-      <button id="export" class="ghost">Export backup JSON</button>
-      <button id="reset" class="danger">Reset local data</button>
-    </div>
-  </section>
-</div>
-
-<script>
-const KEY='atlas_v2_hussain', CFG='atlas_supabase_cfg';
-const start='2026-06-25', end='2026-07-24', base=262;
-const defFoods={
- 'chicken breast cooked 8oz':{cal:375,p:70,c:0,f:8}, 'jasmine rice 1 cup':{cal:205,p:4,c:45,f:0},
- 'whole egg':{cal:70,p:6,c:0,f:5}, 'egg whites 1 cup':{cal:125,p:26,c:2,f:0},
- 'fairlife shake':{cal:150,p:30,c:4,f:2}, 'whey scoop':{cal:120,p:24,c:3,f:1},
- 'greek yogurt cup':{cal:130,p:23,c:9,f:0}, 'lean ground beef 8oz':{cal:430,p:48,c:0,f:24},
- 'potato medium':{cal:160,p:4,c:37,f:0}, 'banana':{cal:105,p:1,c:27,f:0},
- 'bar bq village chicken tikka':{cal:320,p:50,c:4,f:12}, 'beef seekh kabab':{cal:280,p:24,c:4,f:20},
- 'nihari small bowl':{cal:520,p:35,c:15,f:35}, 'biryani 1 cup':{cal:360,p:18,c:50,f:10}
-};
-const meals=[
- ['Chicken rice boxes','Cook 5 lb chicken breast + 8 cups rice + broccoli. Portion 8 oz chicken + 1 cup rice.','~580 cal • 74P • 45C • 8F'],
- ['Chicken shawarma bowls','Chicken, rice, cucumber, tomato, lettuce, Greek yogurt garlic sauce.','~560 cal • 60P • 55C • 9F'],
- ['Lean Bihari bowls','Use lean beef/chicken, measured oil, rice, salad, chutney on side.','~580 cal • 55P • 50C • 16F'],
- ['Turkey taco bowls','Lean turkey, rice, beans, salsa, lettuce. Easy 8-meal prep.','~540 cal • 52P • 55C • 12F'],
- ['Emergency protein stack','Fairlife + whey + Greek yogurt when protein is behind.','~400 cal • 77P • 16C • 3F'],
- ['Breakfast burritos','Egg whites, whole eggs, lean meat, low-carb tortilla. Freeze.','~430 cal • 45P • 35C • 13F']
-];
-const plan={'Mon Push':['Incline DB Press 4x8-10','Machine Chest Press 3x10-12','Cable Fly 3x12-15','Shoulder Press 3x8-10','Lateral Raise 5x15-20','Triceps 4x12-15'],'Tue Pull':['Lat Pulldown 4x10-12','Chest Supported Row 4x8-12','Cable Row 3x10-12','Rear Delt Fly 4x15-20','Hammer Curl 3x10-12'],'Wed Legs':['Hack Squat/Leg Press 4x10-12','RDL 3x8-10','Leg Extension 4x12-15','Leg Curl 4x12-15','Calves 5x12-20'],'Thu Upper Pump':['Incline Machine 3x12','Wide Pulldown 3x12','Machine Row 3x12','Cable Lateral 5x15','Curls + Pushdowns'],'Fri Lower + Arms':['Leg Press 3x8','Walking Lunge 3x20','Leg Curl 3x15','Calves 4x20','EZ Curl + Overhead Tricep'],'Sat Cardio + Posing':['45 min incline walk','Abs','5 min posing','Progress photos'],'Sun Reset':['Meal prep','10k steps','Stretch','Weekly check-in']};
-let sb=null, cloud=false;
-function $(x){return document.getElementById(x)}
-function load(){return JSON.parse(localStorage.getItem(KEY)||'null')||{targets:{cal:2400,p:250,c:180,f:60,steps:10000},daily:{},food:[],foods:defFoods}}
-let S=load();
-function saveLocal(){localStorage.setItem(KEY,JSON.stringify(S))}
-async function initCloud(){let c=JSON.parse(localStorage.getItem(CFG)||'null'); if(!c?.url||!c?.key){$('cloudStatus').innerHTML='Storage: <b class=yellow>local only</b>. Add Supabase in Settings for cloud sync.';return}
- try{sb=supabase.createClient(c.url,c.key); let {data,error}=await sb.from('atlas_state').select('data').eq('id','hussain').single();
- if(error && error.code!=='PGRST116') throw error; if(data?.data){S=data.data; saveLocal()} cloud=true; $('cloudStatus').innerHTML='Storage: <b class=green>cloud sync on</b>. Share this deployed URL when you want a review.'}
- catch(e){$('cloudStatus').innerHTML='Storage: <b class=red>cloud error</b> '+e.message}
- render()
-}
-async function save(){saveLocal(); if(cloud&&sb){await sb.from('atlas_state').upsert({id:'hussain',data:S,updated_at:new Date().toISOString()})} render()}
-function dates(){let a=[],d=new Date(start+'T00:00'),e=new Date(end+'T00:00');while(d<=e){a.push(d.toISOString().slice(0,10));d.setDate(d.getDate()+1)}return a}
-function today(){let t=new Date().toISOString().slice(0,10);return dates().includes(t)?t:start}
-function sumFood(d){return S.food.filter(x=>x.date==d).reduce((a,x)=>{a.cal+=x.cal;a.p+=x.p;a.c+=x.c;a.f+=x.f;return a},{cal:0,p:0,c:0,f:0})}
-function sync(d){let s=sumFood(d);if(s.cal>0)S.daily[d]={...(S.daily[d]||{}),cal:Math.round(s.cal),pro:Math.round(s.p),carb:Math.round(s.c),fat:Math.round(s.f)}}
-function comp(x){if(!x)return null;let p=0,m=0;function add(v){m++;if(v)p++}add((x.pro||0)>=S.targets.p*.9);add((x.cal||99999)<=S.targets.cal+150);add((x.steps||0)>=S.targets.steps);add(x.wo=='Yes'||x.cardio=='Yes');add(x.gutka=='No');return Math.round(p/m*100)}
-function bar(n,v,g,u=''){let pct=Math.min(100,Math.round((v||0)/g*100));return `<p>${n}: ${Math.round(v||0)}${u} / ${g}${u}</p><div class=bar><div class=fill style="width:${pct}%"></div></div>`}
-function render(){['date','fdate'].forEach(i=>$(i).value=$(i).value||today());$('tc').value=S.targets.cal;$('tp').value=S.targets.p;$('tcarb').value=S.targets.c;$('tf').value=S.targets.f;$('ts').value=S.targets.steps;let cfg=JSON.parse(localStorage.getItem(CFG)||'{}');$('surl').value=cfg.url||'';$('skey').value=cfg.key||'';$('foods').innerHTML=Object.keys(S.foods).map(f=>`<option value="${f}">`).join('');
- let ds=dates().map(d=>({date:d,...(S.daily[d]||{})})),ws=ds.filter(x=>x.weight),cur=ws.at(-1)?.weight;$('cw').textContent=cur?cur:'—';$('wl').textContent=cur?(base-cur).toFixed(1):'—';
- let cs=ds.map(x=>comp(x)).filter(x=>x!=null);$('cp').textContent=cs.length?Math.round(cs.reduce((a,b)=>a+b,0)/cs.length):'—';
- let st=0;for(let i=ds.length-1;i>=0;i--){if(ds[i].gutka=='No')st++;else if(ds[i].gutka=='Yes')break}$('gs').textContent=st;
- let d=S.daily[today()]||{},sf=sumFood(today());$('today').innerHTML=bar('Calories',d.cal||sf.cal,S.targets.cal)+bar('Protein',d.pro||sf.p,S.targets.p,'g')+bar('Water',d.water,1,' gal')+bar('Steps',d.steps,S.targets.steps);
- $('macros').innerHTML=bar('Calories',sf.cal,S.targets.cal)+bar('Protein',sf.p,S.targets.p,'g')+bar('Carbs',sf.c,S.targets.c,'g')+bar('Fat',sf.f,S.targets.f,'g');
- $('coach').textContent=(d.gutka=='No')?'Good. Gutka-free today. Protect the streak.':(d.pro&&d.pro<200)?'Protein is low. Add Fairlife + whey or 8 oz chicken.':'Log today. Win the day, not the whole year.';
- draw(ws);$('dt').innerHTML='<tr><th>Date</th><th>Weight</th><th>Cal</th><th>P</th><th>Steps</th><th>Workout</th><th>Gutka</th><th>%</th></tr>'+ds.map(x=>`<tr><td>${x.date}</td><td>${x.weight||''}</td><td>${x.cal||''}</td><td>${x.pro||''}</td><td>${x.steps||''}</td><td>${x.wo||''}</td><td>${x.gutka||''}</td><td>${comp(x)??''}</td></tr>`).join('');
- $('ft').innerHTML='<tr><th>Date</th><th>Food</th><th>Amount</th><th>Cal</th><th>P</th><th>C</th><th>F</th></tr>'+S.food.map(x=>`<tr><td>${x.date}</td><td>${x.name}</td><td>${x.amt} ${x.unit}</td><td>${Math.round(x.cal)}</td><td>${Math.round(x.p)}</td><td>${Math.round(x.c)}</td><td>${Math.round(x.f)}</td></tr>`).join('');
- $('meals').innerHTML=meals.map(m=>`<div class=meal><b>${m[0]}</b><p>${m[1]}</p><small>${m[2]}</small></div>`).join('');
- $('wps').innerHTML=Object.entries(plan).map(([d,a])=>`<div class=day><b>${d}</b><ul>${a.map(x=>`<li>${x}</li>`).join('')}</ul></div>`).join('');
- $('photos').innerHTML=['Week 1','Week 2','Week 3','Week 4'].map(w=>`<div class=meal><b>${w}</b><p>☐ Front relaxed ☐ Front flexed ☐ Side ☐ Back ☐ Most muscular</p></div>`).join('');
- $('score').innerHTML=['Shoulders','Upper chest','Lats','Arms','Waist','Abs','Quads','Calves','Conditioning'].map(x=>`<label>${x}<input type=number min=1 max=10></label>`).join('')
-}
-function draw(ws){let c=$('chart'),ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);ctx.strokeStyle='#263246';ctx.lineWidth=1;for(let i=0;i<5;i++){let y=35+i*60;ctx.beginPath();ctx.moveTo(45,y);ctx.lineTo(c.width-20,y);ctx.stroke()} if(ws.length<2)return;
- let vals=ws.map(x=>+x.weight),min=Math.min(255,...vals)-1,max=Math.max(262,...vals)+1;ctx.strokeStyle='#22c55e';ctx.lineWidth=5;ctx.beginPath();ws.forEach((w,i)=>{let x=50+i*(c.width-80)/(ws.length-1),y=285-(w.weight-min)/(max-min)*235;if(i)ctx.lineTo(x,y);else ctx.moveTo(x,y)});ctx.stroke();ctx.fillStyle='#e5e7eb';ctx.font='18px system-ui';ctx.fillText(`${vals.at(-1)} lb`,c.width-120,45)}
-function summary(){let ds=dates().map(d=>({date:d,...(S.daily[d]||{})})),filled=ds.filter(x=>x.weight||x.cal||x.pro),w=filled.filter(x=>x.weight),avg=n=>n.length?Math.round(n.reduce((a,b)=>a+b,0)/n.length):0;return `Project Atlas weekly review\nCurrent weight: ${w.at(-1)?.weight||'not logged'}\nStart: 262\nGoal: 255 by Jul 24\nAvg calories: ${avg(filled.map(x=>x.cal||0).filter(Boolean))}\nAvg protein: ${avg(filled.map(x=>x.pro||0).filter(Boolean))}g\nGutka-free days logged: ${filled.filter(x=>x.gutka=='No').length}\nWorkouts completed: ${filled.filter(x=>x.wo=='Yes').length}\nNotes: ${filled.map(x=>x.notes).filter(Boolean).slice(-5).join(' | ')}`}
-document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab,.panel').forEach(x=>x.classList.remove('on'));b.classList.add('on');$(b.dataset.t).classList.add('on')});
-$('df').onsubmit=e=>{e.preventDefault();let d=$('date').value;S.daily[d]={weight:+$('weight').value||'',waist:+$('waist').value||'',cal:+$('cal').value||'',pro:+$('pro').value||'',carb:+$('carb').value||'',fat:+$('fat').value||'',water:+$('water').value||'',steps:+$('steps').value||'',sleep:+$('sleep').value||'',wo:$('wo').value,cardio:$('cardio').value,gutka:$('gutka').value,mj:$('mj').value,notes:$('notes').value};save();alert('Saved')};
-$('ff').onsubmit=e=>{e.preventDefault();let n=$('fname').value.trim().toLowerCase(),f=S.foods[n];if(!f){alert('Food not found. Add it in Settings.');return}let amt=+$('amt').value||1,item={date:$('fdate').value,name:n,amt,unit:$('unit').value,cal:f.cal*amt,p:f.p*amt,c:f.c*amt,f:f.f*amt};S.food.push(item);sync(item.date);save();$('fname').value=''};
-$('sf').onsubmit=e=>{e.preventDefault();S.targets={cal:+$('tc').value,p:+$('tp').value,c:+$('tcarb').value,f:+$('tf').value,steps:+$('ts').value};save()};
-$('cf').onsubmit=e=>{e.preventDefault();let n=$('cn').value.trim().toLowerCase();S.foods[n]={cal:+$('cc').value,p:+$('cpp').value,c:+$('ccc').value,f:+$('cff').value};save();alert('Custom food added')};
+<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/><title>Project Atlas v2</title><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><style>:root{--bg:#070a10;--card:#111827;--line:#263244;--txt:#f3f4f6;--mut:#8b95a7;--green:#22c55e;--yellow:#f59e0b;--red:#ef4444}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 50% -10%,#1b2944 0,#070a10 42%,#05070b 100%);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Arial,sans-serif}header{padding:22px 18px 10px;position:sticky;top:0;z-index:5;background:rgba(7,10,16,.92);backdrop-filter:blur(18px);border-bottom:1px solid rgba(255,255,255,.06)}h1{font-size:32px;line-height:1.05;margin:0;font-weight:900;letter-spacing:-1.2px}h2{font-size:21px;margin:0 0 12px;font-weight:900}p,small,label{color:var(--mut)}label{font-size:13px;font-weight:700}.wrap{max-width:980px;margin:auto;padding:12px 14px 100px}.status{background:rgba(17,24,39,.8);border:1px solid var(--line);padding:10px 12px;border-radius:16px;margin-bottom:12px;color:var(--mut);font-size:13px}.tabs{display:flex;gap:8px;overflow:auto;padding:10px 14px;position:sticky;top:91px;z-index:4;background:rgba(7,10,16,.92);backdrop-filter:blur(18px);border-bottom:1px solid rgba(255,255,255,.06)}button{border:0;border-radius:14px;padding:12px 14px;font-weight:900;background:#172033;color:var(--txt);cursor:pointer;font-size:14px}button.on,.save{background:linear-gradient(135deg,#16a34a,#22c55e);color:#03130a}.ghost{background:#0d1424;border:1px solid var(--line)}.red{background:#7f1d1d}.panel{display:none}.panel.on{display:block}.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.card,.box{background:linear-gradient(180deg,rgba(17,24,39,.92),rgba(12,18,32,.92));border:1px solid var(--line);border-radius:24px;padding:16px;margin-bottom:12px;box-shadow:0 20px 50px rgba(0,0,0,.24)}.card span{display:block;color:var(--mut);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.5px}.card b{font-size:30px;letter-spacing:-.8px}.grid{display:grid;grid-template-columns:1.1fr .9fr;gap:12px}.form{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.wide{grid-column:1/-1}input,select,textarea{width:100%;margin-top:6px;border:1px solid var(--line);border-radius:16px;background:#090f1d;color:var(--txt);padding:13px 14px;font-size:16px;outline:none}textarea{min-height:76px}.quick{display:flex;gap:8px;overflow:auto;padding:4px 0 10px}.quick button{white-space:nowrap;font-size:13px;padding:10px 12px}.bar{height:13px;background:#09101f;border-radius:99px;border:1px solid var(--line);overflow:hidden}.fill{height:100%;background:linear-gradient(90deg,#16a34a,#86efac)}table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:9px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}.scroll{overflow:auto}.meal,.day{background:#090f1d;border:1px solid var(--line);border-radius:18px;padding:13px;margin:8px 0}.pill{display:inline-block;padding:6px 10px;border:1px solid var(--line);background:#090f1d;border-radius:999px;color:var(--mut);font-size:12px;margin:3px}.green{color:#86efac}.yellow{color:#fcd34d}.redtxt{color:#fca5a5}canvas{width:100%;height:280px;background:#090f1d;border:1px solid var(--line);border-radius:18px}.bottom{display:none}@media(max-width:760px){.tabs{display:none}.wrap{padding-bottom:112px}.cards,.grid,.form{grid-template-columns:1fr}.card b{font-size:28px}.bottom{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;position:fixed;bottom:0;left:0;right:0;z-index:20;background:rgba(7,10,16,.95);backdrop-filter:blur(18px);border-top:1px solid var(--line);padding:9px 8px 20px}.bottom button{font-size:11px;border-radius:14px;padding:9px 4px}h1{font-size:30px}}</style></head><body><header><h1>Project Atlas</h1><p>v2 • Hussain Transformation • Month 1 • 262 → 255 lb</p></header><div class="tabs"><button class="tab on" data-t="dash">Dashboard</button><button class="tab" data-t="log">Log</button><button class="tab" data-t="food">Food</button><button class="tab" data-t="workout">Workout</button><button class="tab" data-t="settings">Settings</button></div><div class="bottom"><button class="tab on" data-t="dash">Home</button><button class="tab" data-t="log">Log</button><button class="tab" data-t="food">Food</button><button class="tab" data-t="workout">Lift</button><button class="tab" data-t="settings">Setup</button></div><div class="wrap"><div id="cloudStatus" class="status">Checking storage...</div><section id="dash" class="panel on"><div class="cards"><div class="card"><span>Weight</span><b id="cw">—</b><small> lb</small></div><div class="card"><span>Lost</span><b id="wl">—</b><small> lb</small></div><div class="card"><span>Protein</span><b id="tpct">—</b><small>%</small></div><div class="card"><span>Gutka-free</span><b id="gstreak">0</b><small> days</small></div></div><div class="grid"><div class="box"><h2>Weight trend</h2><canvas id="chart" width="900" height="320"></canvas></div><div class="box"><h2>Today</h2><div id="todayBars"></div><h2>Coach</h2><p id="coach"></p><button id="copySummary" class="ghost">Copy summary for ChatGPT</button></div></div></section><section id="log" class="panel"><div class="box"><h2>Smart food log</h2><p>Type normal food: <b>2 slices Goldminer sourdough bread</b>, <b>1 chicken rice bowl</b>, <b>Fairlife shake</b>.</p><form id="smartFoodForm" class="form"><label>Date<input type="date" id="sfdate"></label><label>Meal<input id="smartFood" placeholder="2 slices Goldminer sourdough bread"></label><button class="save wide">Log meal</button></form><div class="quick"><button class="ghost qf" data-food="1 chicken rice bowl">Chicken bowl</button><button class="ghost qf" data-food="1 Fairlife shake">Fairlife</button><button class="ghost qf" data-food="1 whey scoop">Whey</button><button class="ghost qf" data-food="2 slices Goldminer sourdough bread">Sourdough x2</button><button class="ghost qf" data-food="1 lean beef keema">Keema</button></div></div><div class="box"><h2>Daily check-in</h2><form id="dailyForm" class="form"><label>Date<input type="date" id="date"></label><label>Morning weight<input type="number" step="0.1" id="weight"></label><label>Waist<input type="number" step="0.1" id="waist"></label><label>Water gallons<input type="number" step="0.1" id="water"></label><label>Steps<input type="number" id="steps"></label><label>Sleep hours<input type="number" step="0.1" id="sleep"></label><label>Workout<select id="wo"><option>No</option><option>Yes</option><option>Planned</option></select></label><label>Gutka used?<select id="gutka"><option>No</option><option>Yes</option></select></label><label>Mounjaro?<select id="mj"><option>No</option><option>Yes</option></select></label><label class="wide">Notes<textarea id="notes"></textarea></label><button class="save wide">Save check-in</button></form></div></section><section id="food" class="panel"><div class="grid"><div class="box"><h2>Macros today</h2><div id="macros"></div></div><div class="box"><h2>Saved foods</h2><div id="savedFoods"></div></div></div><div class="box scroll"><h2>Food history</h2><table id="foodTable"></table></div><div class="box"><h2>Meal prep recipes</h2><div id="recipes"></div></div></section><section id="workout" class="panel"><div class="box"><h2>Training plan</h2><div id="training"></div></div></section><section id="settings" class="panel"><div class="box"><h2>Cloud sync</h2><form id="cloudForm" class="form"><label>Supabase URL<input id="surl" placeholder="https://xxxxx.supabase.co"></label><label>Publishable key<input id="skey" placeholder="sb_publishable_..."></label><button class="save wide">Save cloud config</button></form></div><div class="box"><h2>Targets</h2><form id="targetForm" class="form"><label>Calories<input id="tc" type="number"></label><label>Protein<input id="tpro" type="number"></label><label>Carbs<input id="tcarb" type="number"></label><label>Fat<input id="tfat" type="number"></label><label>Steps<input id="tsteps" type="number"></label><button class="save wide">Save targets</button></form></div><div class="box"><h2>Add custom food</h2><p>Amounts are per serving. Smart logger multiplies it.</p><form id="customFoodForm" class="form"><label>Name<input id="cn" placeholder="Goldminer sourdough bread"></label><label>Calories<input id="ccal" type="number"></label><label>Protein<input id="cpro" type="number"></label><label>Carbs<input id="ccarb" type="number"></label><label>Fat<input id="cfat" type="number"></label><button class="save wide">Add custom food</button></form><button id="export" class="ghost">Export backup JSON</button><button id="reset" class="red">Reset local data</button></div></section></div><script>
+const KEY='atlas_v2_data',CFG='atlas_v2_supabase',start='2026-06-25',end='2026-07-24',startWeight=262;
+const starterFoods={'goldminer sourdough bread':{cal:100,p:4,c:19,f:1,aliases:['sourdough','sourdough bread','goldminer bread']},'chicken rice bowl':{cal:580,p:70,c:50,f:8,aliases:['chicken bowl','meal prep chicken bowl','chicken and rice bowl']},'fairlife shake':{cal:150,p:30,c:4,f:2,aliases:['fairlife','fairlife protein shake','fairlife nutrition plan']},'whey scoop':{cal:120,p:24,c:3,f:1,aliases:['whey','protein scoop','protein powder']},'lean beef keema':{cal:450,p:55,c:8,f:20,aliases:['keema','beef keema','8 oz keema']},'buffalo chicken gym meal':{cal:340,p:34,c:33,f:8,aliases:['buffalo chicken','gym kitchen buffalo chicken']},'chicken alfredo frozen meal':{cal:340,p:34,c:33,f:8,aliases:['chicken alfredo','alfredo frozen meal','frozen chicken alfredo']},'chicken breast cooked 8oz':{cal:375,p:70,c:0,f:8,aliases:['8 oz chicken breast','chicken breast','cooked chicken']},'jasmine rice 1 cup cooked':{cal:230,p:4,c:50,f:0,aliases:['rice','jasmine rice','1 cup rice']},'green beans':{cal:40,p:2,c:8,f:0,aliases:['steamable green beans','green bean']},'whole egg':{cal:70,p:6,c:0,f:5,aliases:['egg','eggs']},'egg whites 1 cup':{cal:125,p:26,c:2,f:0,aliases:['egg whites']},'greek yogurt cup':{cal:130,p:23,c:9,f:0,aliases:['greek yogurt']},'coke zero':{cal:0,p:0,c:0,f:0,aliases:['coke zero','diet coke','zero coke']}};
+const recipes=[['Chicken Rice Bowl','8 oz chicken + 6 oz cooked rice + green beans','580 cal • 70P • 50C • 8F','Tap quick-add: Chicken bowl'],['Day 1 Rebuild Meal','Keema + 2 sourdough slices','~650 cal • 63P • 46C • 22F','Log: 1 lean beef keema + 2 slices Goldminer sourdough bread'],['Emergency Protein','Fairlife + whey scoop','270 cal • 54P • 7C • 3F','Log both if protein is low']];
+const training={'Day 1 Push':['Incline DB Press 4x8-10','Machine Chest Press 3x10-12','Cable Fly 3x12-15','Shoulder Press 3x8-10','Lateral Raise 5x15-20','Triceps 4x12-15'],'Day 2 Pull':['Lat Pulldown 4x10-12','Chest Supported Row 4x8-12','Cable Row 3x10-12','Rear Delt Fly 4x15-20','Hammer Curl 3x10-12','Preacher Curl 3x12'],'Day 3 Legs':['Leg Press or Hack Squat 4x10','RDL 3x8-10','Leg Extension 4x15','Leg Curl 4x15','Calves 5x15-20'],'Day 4 Upper Pump':['Incline Machine 3x12','Wide Pulldown 3x12','Machine Row 3x12','Cable Lateral 5x15','Curls + Pushdowns'],'Day 5 Lower + Arms':['Leg Press 3x8','Walking Lunges 3x20','Leg Curl 3x15','Calves 4x20','EZ Curl + OH Tricep']};
+let sb=null,cloud=false;function $(id){return document.getElementById(id)}function today(){return new Date().toISOString().slice(0,10)}function dates(){let a=[],d=new Date(start+'T00:00'),e=new Date(end+'T00:00');while(d<=e){a.push(d.toISOString().slice(0,10));d.setDate(d.getDate()+1)}return a}
+function load(){return JSON.parse(localStorage.getItem(KEY)||'null')||{targets:{cal:2400,p:250,c:180,f:60,steps:10000},foods:starterFoods,foodLog:[],daily:{}}}let S=load();function saveLocal(){localStorage.setItem(KEY,JSON.stringify(S))}
+async function initCloud(){let c=JSON.parse(localStorage.getItem(CFG)||'null');if(!c?.url||!c?.key){$('cloudStatus').innerHTML='Storage: <b class=yellow>local only</b>. Add Supabase in Settings.';return}try{sb=supabase.createClient(c.url,c.key);let {data,error}=await sb.from('atlas_state').select('data').eq('id','hussain').single();if(error&&error.code!=='PGRST116')throw error;if(data?.data){S={...S,...data.data};saveLocal()}cloud=true;$('cloudStatus').innerHTML='Storage: <b class=green>cloud sync on</b>'}catch(e){$('cloudStatus').innerHTML='Storage: <b class=redtxt>cloud error</b> '+e.message}render()}
+async function save(){saveLocal();if(cloud&&sb){await sb.from('atlas_state').upsert({id:'hussain',data:S,updated_at:new Date().toISOString()})}render()}
+function foodIndex(){let idx=[];Object.entries(S.foods).forEach(([name,v])=>{idx.push([name,name,v]);(v.aliases||[]).forEach(a=>idx.push([a,name,v]))});return idx.sort((a,b)=>b[0].length-a[0].length)}
+function parseMeal(text){let parts=text.toLowerCase().replace(/,/g,' + ').replace(/\band\b/g,' + ').split('+').map(x=>x.trim()).filter(Boolean);let items=[],totals={cal:0,p:0,c:0,f:0};for(let part of parts){let mult=1,namePart=part;let m=part.match(/^(\d+(\.\d+)?)\s*(x|servings?|slices?|pieces?|cups?|scoops?|oz)?\s+(.+)$/);if(m){mult=parseFloat(m[1]);namePart=m[4].trim()}let found=null;for(let [alias,name,v] of foodIndex()){if(namePart.includes(alias)||part.includes(alias)){found={name,v};break}}if(!found)return{error:`Food not found: ${part}. Add it in Settings.`};let v=found.v;totals.cal+=v.cal*mult;totals.p+=v.p*mult;totals.c+=v.c*mult;totals.f+=v.f*mult;items.push({name:found.name,amount:mult,cal:v.cal*mult,p:v.p*mult,c:v.c*mult,f:v.f*mult,raw:part})}return{items,totals}}
+function sumFood(date){return S.foodLog.filter(x=>x.date==date).reduce((a,x)=>{a.cal+=x.cal;a.p+=x.p;a.c+=x.c;a.f+=x.f;return a},{cal:0,p:0,c:0,f:0})}function syncDaily(date){let s=sumFood(date);if(s.cal>0)S.daily[date]={...(S.daily[date]||{}),cal:Math.round(s.cal),pro:Math.round(s.p),carb:Math.round(s.c),fat:Math.round(s.f)}}
+function bar(n,v,g,u=''){let pct=Math.min(100,Math.round((v||0)/g*100));return `<p><b>${n}</b>: ${Math.round(v||0)}${u} / ${g}${u}</p><div class="bar"><div class="fill" style="width:${pct}%"></div></div>`}
+function render(){['sfdate','date'].forEach(i=>$(i).value=$(i).value||today());let cfg=JSON.parse(localStorage.getItem(CFG)||'{}');$('surl').value=cfg.url||'';$('skey').value=cfg.key||'';$('tc').value=S.targets.cal;$('tpro').value=S.targets.p;$('tcarb').value=S.targets.c;$('tfat').value=S.targets.f;$('tsteps').value=S.targets.steps;let ds=dates().map(d=>({date:d,...(S.daily[d]||{})})),weights=ds.filter(x=>x.weight),cur=weights.at(-1)?.weight;$('cw').textContent=cur||'—';$('wl').textContent=cur?(startWeight-cur).toFixed(1):'—';let sum=sumFood(today()),d=S.daily[today()]||{};$('tpct').textContent=Math.round(((d.pro||sum.p||0)/S.targets.p)*100)||0;let streak=0;for(let i=ds.length-1;i>=0;i--){if(ds[i].gutka==='No')streak++;else if(ds[i].gutka==='Yes')break}$('gstreak').textContent=streak;$('todayBars').innerHTML=bar('Calories',d.cal||sum.cal,S.targets.cal)+bar('Protein',d.pro||sum.p,S.targets.p,'g')+bar('Water',d.water,1,' gal')+bar('Steps',d.steps,S.targets.steps);$('macros').innerHTML=bar('Calories',sum.cal,S.targets.cal)+bar('Protein',sum.p,S.targets.p,'g')+bar('Carbs',sum.c,S.targets.c,'g')+bar('Fat',sum.f,S.targets.f,'g');$('coach').textContent=(d.gutka==='No')?'Gutka-free today. Protect the streak.':((sum.p||d.pro)<180?'Protein is behind. Add chicken bowl, Fairlife, or whey.':'Keep logging. The trend matters.');$('foodTable').innerHTML='<tr><th>Date</th><th>Food</th><th>Cal</th><th>P</th><th>C</th><th>F</th></tr>'+S.foodLog.slice().reverse().map(x=>`<tr><td>${x.date}</td><td>${x.label}</td><td>${Math.round(x.cal)}</td><td>${Math.round(x.p)}</td><td>${Math.round(x.c)}</td><td>${Math.round(x.f)}</td></tr>`).join('');$('savedFoods').innerHTML=Object.entries(S.foods).map(([n,v])=>`<span class="pill">${n}: ${v.cal} cal, ${v.p}P</span>`).join('');$('recipes').innerHTML=recipes.map(r=>`<div class="meal"><b>${r[0]}</b><p>${r[1]}</p><small>${r[2]}</small><p>${r[3]}</p></div>`).join('');$('training').innerHTML=Object.entries(training).map(([d,arr])=>`<div class="day"><b>${d}</b><ul>${arr.map(x=>`<li>${x}</li>`).join('')}</ul></div>`).join('');draw(weights)}
+function draw(ws){let c=$('chart'),ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);ctx.strokeStyle='#263244';for(let i=0;i<5;i++){let y=35+i*60;ctx.beginPath();ctx.moveTo(45,y);ctx.lineTo(c.width-25,y);ctx.stroke()}if(ws.length<2)return;let vals=ws.map(x=>+x.weight),min=Math.min(255,...vals)-1,max=Math.max(262,...vals)+1;ctx.strokeStyle='#22c55e';ctx.lineWidth=5;ctx.beginPath();ws.forEach((w,i)=>{let x=55+i*(c.width-90)/(ws.length-1),y=285-(w.weight-min)/(max-min)*235;if(i)ctx.lineTo(x,y);else ctx.moveTo(x,y)});ctx.stroke()}
+function summary(){return `Project Atlas review\nRecent foods: ${S.foodLog.slice(-10).map(x=>x.label).join(' | ')}\nToday macros: ${JSON.stringify(sumFood(today()))}`}
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab,.panel').forEach(x=>x.classList.remove('on'));document.querySelectorAll(`.tab[data-t="${b.dataset.t}"]`).forEach(x=>x.classList.add('on'));$(b.dataset.t).classList.add('on')});document.querySelectorAll('.qf').forEach(b=>b.onclick=()=>{$('smartFood').value=b.dataset.food;$('smartFoodForm').requestSubmit()});
+$('smartFoodForm').onsubmit=e=>{e.preventDefault();let d=$('sfdate').value,text=$('smartFood').value.trim(),r=parseMeal(text);if(r.error){alert(r.error);return}S.foodLog.push({date:d,label:text,items:r.items,cal:r.totals.cal,p:r.totals.p,c:r.totals.c,f:r.totals.f});syncDaily(d);$('smartFood').value='';save();alert(`Logged: ${Math.round(r.totals.cal)} cal, ${Math.round(r.totals.p)}g protein`)};
+$('dailyForm').onsubmit=e=>{e.preventDefault();let d=$('date').value;S.daily[d]={...(S.daily[d]||{}),weight:+$('weight').value||S.daily[d]?.weight||'',waist:+$('waist').value||S.daily[d]?.waist||'',water:+$('water').value||'',steps:+$('steps').value||'',sleep:+$('sleep').value||'',wo:$('wo').value,gutka:$('gutka').value,mj:$('mj').value,notes:$('notes').value,cal:S.daily[d]?.cal||'',pro:S.daily[d]?.pro||'',carb:S.daily[d]?.carb||'',fat:S.daily[d]?.fat||''};save();alert('Check-in saved')};
+$('customFoodForm').onsubmit=e=>{e.preventDefault();let n=$('cn').value.trim().toLowerCase();S.foods[n]={cal:+$('ccal').value,p:+$('cpro').value,c:+$('ccarb').value,f:+$('cfat').value,aliases:[]};save();alert('Custom food added')};
+$('targetForm').onsubmit=e=>{e.preventDefault();S.targets={cal:+$('tc').value,p:+$('tpro').value,c:+$('tcarb').value,f:+$('tfat').value,steps:+$('tsteps').value};save()};
 $('cloudForm').onsubmit=e=>{e.preventDefault();localStorage.setItem(CFG,JSON.stringify({url:$('surl').value.trim(),key:$('skey').value.trim()}));location.reload()};
-$('copySummary').onclick=async()=>{await navigator.clipboard.writeText(summary());alert('Copied. Paste it into ChatGPT for review.')};
-$('export').onclick=()=>{let b=new Blob([JSON.stringify(S,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='project-atlas-data.json';a.click()};
-$('reset').onclick=()=>{if(confirm('Delete local data on this device?')){localStorage.removeItem(KEY);location.reload()}};
+$('copySummary').onclick=async()=>{await navigator.clipboard.writeText(summary());alert('Copied.')};$('export').onclick=()=>{let b=new Blob([JSON.stringify(S,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='project-atlas-backup.json';a.click()};$('reset').onclick=()=>{if(confirm('Reset local data only?')){localStorage.removeItem(KEY);location.reload()}};
 render();initCloud();
-</script>
-</body>
-</html>
+</script></body></html>
